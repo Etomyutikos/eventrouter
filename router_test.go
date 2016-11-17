@@ -6,7 +6,7 @@ import (
 	"testing"
 )
 
-func TestRouting(t *testing.T) {
+func TestSingleHandlers(t *testing.T) {
 	tests := []struct {
 		desc        string
 		subscribeRt string
@@ -22,16 +22,36 @@ func TestRouting(t *testing.T) {
 			"*",
 			"event",
 		},
-		//{
-		//	"second-level event",
-		//	"event.second",
-		//	"event.second",
-		//},
-		//{
-		//	"second-level wildcard event",
-		//	"event.*",
-		//	"event.second",
-		//},
+		{
+			"second-level event",
+			"first.second",
+			"first.second",
+		},
+		{
+			"second-level wildcard first event",
+			"*.second",
+			"first.second",
+		},
+		{
+			"second-level wildcard second event",
+			"first.*",
+			"first.second",
+		},
+		{
+			"third-level wildcard first event",
+			"*.second.third",
+			"first.second.third",
+		},
+		{
+			"third-level wildcard second event",
+			"first.*.third",
+			"first.second.third",
+		},
+		{
+			"third-level wildcard third event",
+			"first.second.*",
+			"first.second.third",
+		},
 	}
 
 	for _, test := range tests {

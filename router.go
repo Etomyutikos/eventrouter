@@ -4,6 +4,7 @@ import "strings"
 
 type Event struct {
 	Route   []string
+	index   int
 	Payload interface{}
 }
 
@@ -24,7 +25,6 @@ type Router interface {
 
 type router struct {
 	handlers map[string][]Handler
-	routers  map[string]*router
 }
 
 func New() Router {
@@ -33,34 +33,49 @@ func New() Router {
 	}
 }
 
+func newSubrouter(rt string, h Handler) *router {
+	r := &router{
+		handlers: make(map[string][]Handler),
+	}
+	r.Subscribe(rt, h)
+
+	return r
+}
+
+func (r *router) Handle(e Event) {
+	e.index++
+	hs, ok := r.handlers[e.Route[e.index]]
+	if !ok {
+		hs, ok = r.handlers["*"]
+		if !ok {
+			return
+		}
+	}
+
+	for _, h := range hs {
+		h.Handle(e)
+	}
+}
+
 func (r *router) Subscribe(rt string, h Handler) {
-	hs, ok := r.handlers[rt]
+	parts := strings.Split(rt, ".")
+	if len(parts) > 1 {
+		h = newSubrouter(strings.Join(parts[1:], "."), h)
+	}
+
+	hs, ok := r.handlers[parts[0]]
 	if !ok {
 		hs = make([]Handler, 0, 1)
 	}
 
 	hs = append(hs, h)
-	r.handlers[rt] = hs
-}
-
-func (r *router) collect(rt string) []Handler {
-	var hss []Handler
-	for p, hs := range r.handlers {
-		if p == rt || p == "*" {
-			hss = append(hss, hs...)
-		}
-	}
-	return hss
+	r.handlers[parts[0]] = hs
 }
 
 func (r *router) Publish(rt string, p interface{}) {
-	hs := r.collect(rt)
-
-	ps := strings.Split(rt, ".")
-	for _, h := range hs {
-		h.Handle(Event{
-			Route:   ps,
-			Payload: p,
-		})
-	}
+	r.Handle(Event{
+		Route:   strings.Split(rt, "."),
+		index:   -1,
+		Payload: p,
+	})
 }
