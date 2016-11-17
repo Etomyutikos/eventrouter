@@ -6,33 +6,42 @@ import (
 	"testing"
 )
 
-func TestRouter(t *testing.T) {
+func TestRouting(t *testing.T) {
 	tests := []struct {
 		desc        string
 		subscribeRt string
 		publishRt   string
-		p           interface{}
 	}{
 		{
 			"top-level event",
 			"event",
 			"event",
-			"payload",
 		},
 		{
 			"top-level wildcard event",
 			"*",
 			"event",
-			"payload",
 		},
+		//{
+		//	"second-level event",
+		//	"event.second",
+		//	"event.second",
+		//},
+		//{
+		//	"second-level wildcard event",
+		//	"event.*",
+		//	"event.second",
+		//},
 	}
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
 			r := New()
 
+			p := "payload"
+
 			var called bool
-			h := func(e Event) {
+			h := HandlerFunc(func(e Event) {
 				called = true
 
 				expectedRt := strings.Split(test.publishRt, ".")
@@ -40,13 +49,13 @@ func TestRouter(t *testing.T) {
 					t.Fatalf("incorrect route; expected: %v, actual: %v", expectedRt, e.Route)
 				}
 
-				if e.Payload != test.p {
-					t.Fatalf("incorrect payload; expected: %s, actual: %s", test.p, e.Payload)
+				if e.Payload != p {
+					t.Fatalf("incorrect payload; expected: %s, actual: %s", p, e.Payload)
 				}
-			}
+			})
 
 			r.Subscribe(test.subscribeRt, h)
-			r.Publish(test.publishRt, test.p)
+			r.Publish(test.publishRt, p)
 
 			if !called {
 				t.Fatal("handler was never called")
@@ -55,14 +64,14 @@ func TestRouter(t *testing.T) {
 	}
 }
 
-func TestRouterMultipleHandlers(t *testing.T) {
+func TestMultipleHandlers(t *testing.T) {
 	r := New()
 
 	rt := "event"
 	p := "payload"
 
 	var called int
-	h := func(e Event) {
+	h := HandlerFunc(func(e Event) {
 		called += 1
 
 		expectedRt := []string{"event"}
@@ -73,7 +82,7 @@ func TestRouterMultipleHandlers(t *testing.T) {
 		if e.Payload != p {
 			t.Fatalf("incorrect payload; expected: %s, actual: %s", p, e.Payload)
 		}
-	}
+	})
 
 	r.Subscribe(rt, h)
 	r.Subscribe(rt, h)
