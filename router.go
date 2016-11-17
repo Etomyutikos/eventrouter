@@ -33,7 +33,7 @@ func New() Router {
 	}
 }
 
-func newSubrouter(rt string, h Handler) *router {
+func new(rt string, h Handler) *router {
 	r := &router{
 		handlers: make(map[string][]Handler),
 	}
@@ -60,7 +60,7 @@ func (r *router) Handle(e Event) {
 func (r *router) Subscribe(rt string, h Handler) {
 	parts := strings.Split(rt, ".")
 	if len(parts) > 1 {
-		h = newSubrouter(strings.Join(parts[1:], "."), h)
+		h = new(strings.Join(parts[1:], "."), h)
 	}
 
 	hs, ok := r.handlers[parts[0]]
