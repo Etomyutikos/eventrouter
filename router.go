@@ -15,27 +15,33 @@ type Router interface {
 }
 
 type router struct {
-	handlers map[string]Handler
+	handlers map[string][]Handler
 }
 
 func New() Router {
 	return &router{
-		handlers: make(map[string]Handler),
+		handlers: make(map[string][]Handler),
 	}
 }
 
 func (r *router) Subscribe(e string, h Handler) {
-	r.handlers[e] = h
+	hs, ok := r.handlers[e]
+	if !ok {
+		hs = make([]Handler, 0, 1)
+	}
+
+	hs = append(hs, h)
+	r.handlers[e] = hs
 }
 
 func (r *router) collect(e string) []Handler {
-	var hs []Handler
-	for p, h := range r.handlers {
+	var hss []Handler
+	for p, hs := range r.handlers {
 		if p == e || p == "*" {
-			hs = append(hs, h)
+			hss = append(hss, hs...)
 		}
 	}
-	return hs
+	return hss
 }
 
 func (r *router) Publish(e string, p interface{}) {

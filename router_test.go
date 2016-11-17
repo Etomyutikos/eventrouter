@@ -54,3 +54,33 @@ func TestRouter(t *testing.T) {
 		})
 	}
 }
+
+func TestRouterMultipleHandlers(t *testing.T) {
+	r := New()
+
+	rt := "event"
+	p := "payload"
+
+	var called int
+	h := func(e Event) {
+		called += 1
+
+		expectedRt := []string{"event"}
+		if !reflect.DeepEqual(e.Route, expectedRt) {
+			t.Fatalf("incorrect route; expected: %v, actual: %v", expectedRt, e.Route)
+		}
+
+		if e.Payload != p {
+			t.Fatalf("incorrect payload; expected: %s, actual: %s", p, e.Payload)
+		}
+	}
+
+	r.Subscribe(rt, h)
+	r.Subscribe(rt, h)
+
+	r.Publish(rt, p)
+
+	if called != 2 {
+		t.Fatalf("handler called count incorrect; expected: %d, actual: %d", 2, called)
+	}
+}
