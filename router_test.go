@@ -73,6 +73,12 @@ func TestHandlers(t *testing.T) {
 			"first.second.third",
 			5,
 		},
+		{
+			"no handlers",
+			[]string{"first"},
+			"none",
+			0,
+		},
 	}
 
 	for _, test := range tests {
