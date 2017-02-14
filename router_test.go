@@ -56,7 +56,7 @@ func TestHandlers(t *testing.T) {
 			3,
 		},
 		{
-			"top-level longer event",
+			"partial subscribe",
 			[]string{"first"},
 			"first.second.third",
 			1,
