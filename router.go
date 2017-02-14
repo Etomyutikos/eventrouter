@@ -28,15 +28,10 @@ type Handler interface {
 	Handle(Event)
 }
 
-type HandlerFunc func(Event)
-
-func (f HandlerFunc) Handle(e Event) {
-	f(e)
-}
-
 type Router interface {
 	Publish(rt string, p interface{})
 	Subscribe(rt string, h Handler)
+	Unsubscribe(rt string, h Handler)
 }
 
 type router struct {
@@ -111,5 +106,33 @@ func (r *router) Subscribe(rt string, h Handler) {
 
 		hs = append(hs, h)
 		handlers[parts[0]] = hs
+	}
+}
+
+func (r *router) Unsubscribe(rt string, h Handler) {
+	r.ops <- func(handlers map[string][]Handler) {
+		parts := strings.Split(rt, ".")
+		hs, ok := handlers[parts[0]]
+		if !ok {
+			return
+		}
+
+		if len(parts) > 1 {
+			for _, handler := range hs {
+				r, ok := handler.(Router)
+				if ok {
+					r.Unsubscribe(strings.Join(parts[1:], "."), h)
+					h = handler
+				}
+			}
+		}
+
+		for i, handler := range hs {
+			if h == handler {
+				hs = append(hs[:i], hs[i+1:]...)
+				handlers[parts[0]] = hs
+				break
+			}
+		}
 	}
 }
