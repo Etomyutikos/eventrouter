@@ -8,6 +8,10 @@ type Event struct {
 	Payload interface{}
 }
 
+func (e Event) CurrentPart() string {
+	return e.Route[e.index]
+}
+
 type Handler interface {
 	Handle(Event)
 }
@@ -42,9 +46,12 @@ func new(rt string, h Handler) *router {
 	return r
 }
 
+// TODO(Erik): support multithreaded operations; https://dave.cheney.net/2016/11/13/do-not-fear-first-class-functions
+// TODO(Erik): does branching work like I expect?
+
 func (r *router) Handle(e Event) {
 	e.index++
-	hs, ok := r.handlers[e.Route[e.index]]
+	hs, ok := r.handlers[e.CurrentPart()]
 	if !ok {
 		hs, ok = r.handlers["*"]
 		if !ok {
