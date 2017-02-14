@@ -60,13 +60,6 @@ func New() Router {
 	return r
 }
 
-func newRouter(rt string, h Handler) *router {
-	r := New()
-	r.Subscribe(rt, h)
-
-	return r.(*router)
-}
-
 func (r *router) Handle(e Event) {
 	var wg sync.WaitGroup
 	wg.Add(1)
@@ -94,11 +87,21 @@ func (r *router) Handle(e Event) {
 	wg.Wait()
 }
 
+func (r *router) Publish(rt string, p interface{}) {
+	r.Handle(Event{
+		Route:   strings.Split(rt, "."),
+		index:   -1,
+		Payload: p,
+	})
+}
+
 func (r *router) Subscribe(rt string, h Handler) {
 	r.ops <- func(handlers map[string][]Handler) {
 		parts := strings.Split(rt, ".")
 		if len(parts) > 1 {
-			h = newRouter(strings.Join(parts[1:], "."), h)
+			r := New()
+			r.Subscribe(strings.Join(parts[1:], "."), h)
+			h = r.(*router)
 		}
 
 		hs, ok := handlers[parts[0]]
@@ -109,12 +112,4 @@ func (r *router) Subscribe(rt string, h Handler) {
 		hs = append(hs, h)
 		handlers[parts[0]] = hs
 	}
-}
-
-func (r *router) Publish(rt string, p interface{}) {
-	r.Handle(Event{
-		Route:   strings.Split(rt, "."),
-		index:   -1,
-		Payload: p,
-	})
 }
