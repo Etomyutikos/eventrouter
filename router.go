@@ -8,6 +8,15 @@ type Event struct {
 	Payload interface{}
 }
 
+func (e *Event) next() bool {
+	e.index++
+	if e.index >= len(e.Route) {
+		return false
+	}
+
+	return true
+}
+
 func (e Event) CurrentPart() string {
 	return e.Route[e.index]
 }
@@ -37,20 +46,21 @@ func New() Router {
 	}
 }
 
-func new(rt string, h Handler) *router {
-	r := &router{
-		handlers: make(map[string][]Handler),
-	}
+func newRouter(rt string, h Handler) *router {
+	r := New()
 	r.Subscribe(rt, h)
 
-	return r
+	return r.(*router)
 }
 
 // TODO(Erik): support multithreaded operations; https://dave.cheney.net/2016/11/13/do-not-fear-first-class-functions
 // TODO(Erik): does branching work like I expect?
 
 func (r *router) Handle(e Event) {
-	e.index++
+	if !e.next() {
+		return
+	}
+
 	hs, ok := r.handlers[e.CurrentPart()]
 	if !ok {
 		hs, ok = r.handlers["*"]
@@ -67,7 +77,7 @@ func (r *router) Handle(e Event) {
 func (r *router) Subscribe(rt string, h Handler) {
 	parts := strings.Split(rt, ".")
 	if len(parts) > 1 {
-		h = new(strings.Join(parts[1:], "."), h)
+		h = newRouter(strings.Join(parts[1:], "."), h)
 	}
 
 	hs, ok := r.handlers[parts[0]]

@@ -85,7 +85,20 @@ func TestHandlers(t *testing.T) {
 			}
 		})
 	}
-}
 
-// three wildcards, only one publish part: panic
-// does branching work like I expect?
+	t.Run("handler subscribed deeper than published", func(t *testing.T) {
+		var called int
+		h := HandlerFunc(func(e Event) {
+			called++
+		})
+
+		r := New()
+		r.Subscribe("first.second.third", h)
+		r.Publish("first", "payload")
+
+		expectedCount := 0
+		if called != expectedCount {
+			t.Fatalf("handler called count incorrect; expected: %d, actual: %d", expectedCount, called)
+		}
+	})
+}
