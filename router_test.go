@@ -67,6 +67,12 @@ func TestHandlers(t *testing.T) {
 			"first",
 			0,
 		},
+		{
+			"branching handlers",
+			[]string{"first", "first.*", "first.second", "first.*.third", "first.second.third"},
+			"first.second.third",
+			5,
+		},
 	}
 
 	for _, test := range tests {

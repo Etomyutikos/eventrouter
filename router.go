@@ -54,7 +54,6 @@ func newRouter(rt string, h Handler) *router {
 }
 
 // TODO(Erik): support multithreaded operations; https://dave.cheney.net/2016/11/13/do-not-fear-first-class-functions
-// TODO(Erik): does branching work like I expect?
 
 func (r *router) Handle(e Event) {
 	if !e.next() {
