@@ -8,49 +8,64 @@ import (
 
 func TestHandlers(t *testing.T) {
 	tests := []struct {
-		desc         string
-		subscribeRts []string
-		publishRt    string
+		desc           string
+		subscribeRts   []string
+		publishRt      string
+		expectedCalled int
 	}{
 		{
 			"top-level event",
 			[]string{"event"},
 			"event",
+			1,
 		},
 		{
 			"top-level wildcard event",
 			[]string{"*"},
 			"event",
+			1,
 		},
 		{
 			"second-level event",
 			[]string{"first.second"},
 			"first.second",
+			1,
 		},
 		{
 			"second-level wildcard first event",
 			[]string{"*.second"},
 			"first.second",
+			1,
 		},
 		{
 			"second-level wildcard second event",
 			[]string{"first.*"},
 			"first.second",
+			1,
 		},
 		{
 			"top-level event 2 handlers",
 			[]string{"event", "event"},
 			"event",
+			2,
 		},
 		{
 			"3 2 1 wildcards",
 			[]string{"*", "*.*", "*.*.*"},
 			"first.second.third",
+			3,
 		},
 		{
 			"top-level longer event",
 			[]string{"first"},
 			"first.second.third",
+			1,
+		},
+		{
+			"handler subscribed deeper than published",
+			[]string{"first.second.third"},
+			"first",
+			0,
 		},
 	}
 
@@ -79,26 +94,9 @@ func TestHandlers(t *testing.T) {
 
 			r.Publish(test.publishRt, p)
 
-			expectedCount := len(test.subscribeRts)
-			if called != expectedCount {
-				t.Fatalf("handler called count incorrect; expected: %d, actual: %d", expectedCount, called)
+			if called != test.expectedCalled {
+				t.Fatalf("handler called count incorrect; expected: %d, actual: %d", test.expectedCalled, called)
 			}
 		})
 	}
-
-	t.Run("handler subscribed deeper than published", func(t *testing.T) {
-		var called int
-		h := HandlerFunc(func(e Event) {
-			called++
-		})
-
-		r := New()
-		r.Subscribe("first.second.third", h)
-		r.Publish("first", "payload")
-
-		expectedCount := 0
-		if called != expectedCount {
-			t.Fatalf("handler called count incorrect; expected: %d, actual: %d", expectedCount, called)
-		}
-	})
 }
