@@ -74,8 +74,14 @@ func TestHandlers(t *testing.T) {
 			5,
 		},
 		{
-			"no handlers",
+			"no matching handlers",
 			[]string{"first"},
+			"none",
+			0,
+		},
+		{
+			"no handlers",
+			[]string{},
 			"none",
 			0,
 		},
