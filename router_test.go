@@ -62,7 +62,7 @@ func TestHandlers(t *testing.T) {
 			1,
 		},
 		{
-			"handler subscribed deeper than published",
+			"partial publish",
 			[]string{"first.second.third"},
 			"first",
 			0,
