@@ -1,6 +1,9 @@
 package eventrouter
 
-import "strings"
+import (
+	"strings"
+	"sync"
+)
 
 type Event struct {
 	Route   []string
@@ -37,13 +40,24 @@ type Router interface {
 }
 
 type router struct {
-	handlers map[string][]Handler
+	ops chan func(map[string][]Handler)
+}
+
+// see https://dave.cheney.net/2016/11/13/do-not-fear-first-class-functions for
+// inspiration
+func (r *router) loop() {
+	handlers := make(map[string][]Handler)
+	for op := range r.ops {
+		op(handlers)
+	}
 }
 
 func New() Router {
-	return &router{
-		handlers: make(map[string][]Handler),
+	r := &router{
+		ops: make(chan func(map[string][]Handler)),
 	}
+	go r.loop()
+	return r
 }
 
 func newRouter(rt string, h Handler) *router {
@@ -53,39 +67,48 @@ func newRouter(rt string, h Handler) *router {
 	return r.(*router)
 }
 
-// TODO(Erik): support multithreaded operations; https://dave.cheney.net/2016/11/13/do-not-fear-first-class-functions
-
 func (r *router) Handle(e Event) {
-	if !e.next() {
-		return
-	}
+	var wg sync.WaitGroup
+	wg.Add(1)
 
-	hs, ok := r.handlers[e.CurrentPart()]
-	if !ok {
-		hs, ok = r.handlers["*"]
-		if !ok {
+	r.ops <- func(handlers map[string][]Handler) {
+		defer wg.Done()
+
+		if !e.next() {
 			return
+		}
+
+		hs, ok := handlers[e.CurrentPart()]
+		if !ok {
+			hs, ok = handlers["*"]
+			if !ok {
+				return
+			}
+		}
+
+		for _, h := range hs {
+			h.Handle(e)
 		}
 	}
 
-	for _, h := range hs {
-		h.Handle(e)
-	}
+	wg.Wait()
 }
 
 func (r *router) Subscribe(rt string, h Handler) {
-	parts := strings.Split(rt, ".")
-	if len(parts) > 1 {
-		h = newRouter(strings.Join(parts[1:], "."), h)
-	}
+	r.ops <- func(handlers map[string][]Handler) {
+		parts := strings.Split(rt, ".")
+		if len(parts) > 1 {
+			h = newRouter(strings.Join(parts[1:], "."), h)
+		}
 
-	hs, ok := r.handlers[parts[0]]
-	if !ok {
-		hs = make([]Handler, 0, 1)
-	}
+		hs, ok := handlers[parts[0]]
+		if !ok {
+			hs = make([]Handler, 0, 1)
+		}
 
-	hs = append(hs, h)
-	r.handlers[parts[0]] = hs
+		hs = append(hs, h)
+		handlers[parts[0]] = hs
+	}
 }
 
 func (r *router) Publish(rt string, p interface{}) {
