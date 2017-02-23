@@ -33,13 +33,17 @@ type Handler interface {
 	Handle(Event)
 }
 
-type router struct {
+// Router manages a simple trie of Handlers that can respond to Events by
+// matching incoming routes against the routes of subscribed Handlers.
+//
+// TODO(Erik): a better doc comment, please :(
+type Router struct {
 	ops chan func(map[string][]Handler)
 }
 
 // see https://dave.cheney.net/2016/11/13/do-not-fear-first-class-functions for
 // inspiration
-func (r *router) loop() {
+func (r *Router) loop() {
 	handlers := make(map[string][]Handler)
 	for op := range r.ops {
 		op(handlers)
@@ -47,8 +51,8 @@ func (r *router) loop() {
 }
 
 // New returns a configured Router.
-func New() *router {
-	r := &router{
+func New() *Router {
+	r := &Router{
 		ops: make(chan func(map[string][]Handler)),
 	}
 	go r.loop()
@@ -56,7 +60,7 @@ func New() *router {
 }
 
 type routeHandler struct {
-	*router
+	*Router
 }
 
 // Handle performs Event routing for the subscribed Handlers.
@@ -77,7 +81,7 @@ func (r routeHandler) Handle(e Event) {
 
 // Publish triggers any Handlers subscribed to the route to handle an Event
 // containing the provided payload.
-func (r *router) Publish(rt string, p interface{}) {
+func (r *Router) Publish(rt string, p interface{}) {
 	routeHandler{r}.Handle(Event{
 		Route: route{
 			parts: strings.Split(rt, "."),
@@ -88,7 +92,7 @@ func (r *router) Publish(rt string, p interface{}) {
 }
 
 // Subscribe adds a Handler to the Router to respond to the given route.
-func (r *router) Subscribe(rt string, h Handler) {
+func (r *Router) Subscribe(rt string, h Handler) {
 	r.ops <- func(handlers map[string][]Handler) {
 		parts := strings.Split(rt, ".")
 		if len(parts) > 1 {
@@ -108,7 +112,7 @@ func (r *router) Subscribe(rt string, h Handler) {
 }
 
 // Unsubscribe removes a specifc Handler from the Router for a given route.
-func (r *router) Unsubscribe(rt string, h Handler) {
+func (r *Router) Unsubscribe(rt string, h Handler) {
 	r.ops <- func(handlers map[string][]Handler) {
 		parts := strings.Split(rt, ".")
 		hs, ok := handlers[parts[0]]
