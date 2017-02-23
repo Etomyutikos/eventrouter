@@ -2,6 +2,7 @@ package eventrouter
 
 import "strings"
 
+// Event wraps a payload and route information for passing into Handlers.
 type Event struct {
 	Route   []string
 	index   int
@@ -17,6 +18,8 @@ func (e *Event) next() bool {
 	return true
 }
 
+// CurrentPart returns the part of the Event's route that corresponds to
+// the depth of the current handler.
 func (e Event) CurrentPart() string {
 	return e.Route[e.index]
 }
@@ -26,9 +29,9 @@ type Handler interface {
 }
 
 type Router interface {
-	Publish(rt string, p interface{})
-	Subscribe(rt string, h Handler)
-	Unsubscribe(rt string, h Handler)
+	Publish(route string, payload interface{})
+	Subscribe(route string, handler Handler)
+	Unsubscribe(route string, handler Handler)
 }
 
 type router struct {
@@ -44,6 +47,7 @@ func (r *router) loop() {
 	}
 }
 
+// New returns a configured Router.
 func New() Router {
 	r := &router{
 		ops: make(chan func(map[string][]Handler)),
@@ -52,6 +56,7 @@ func New() Router {
 	return r
 }
 
+// Handle performs Event routing for the subscribed Handlers.
 func (r *router) Handle(e Event) {
 	r.ops <- func(handlers map[string][]Handler) {
 		if !e.next() {
@@ -72,6 +77,8 @@ func (r *router) Handle(e Event) {
 	}
 }
 
+// Publish triggers any Handlers subscribed to the route to handle an Event
+// containing the provided payload.
 func (r *router) Publish(rt string, p interface{}) {
 	r.Handle(Event{
 		Route:   strings.Split(rt, "."),
@@ -80,6 +87,7 @@ func (r *router) Publish(rt string, p interface{}) {
 	})
 }
 
+// Subscribe adds a Handler to the Router to respond to the given route.
 func (r *router) Subscribe(rt string, h Handler) {
 	r.ops <- func(handlers map[string][]Handler) {
 		parts := strings.Split(rt, ".")
@@ -99,6 +107,7 @@ func (r *router) Subscribe(rt string, h Handler) {
 	}
 }
 
+// Unsubscribe removes a specifc Handler from the Router for a given route.
 func (r *router) Unsubscribe(rt string, h Handler) {
 	r.ops <- func(handlers map[string][]Handler) {
 		parts := strings.Split(rt, ".")
