@@ -133,6 +133,10 @@ func (r *Router) Subscribe(rt string, h Handler) {
 }
 
 // Unsubscribe removes a specifc Handler from the Router for a given route.
+//
+// It must be noted that this function is heavily dependent on user input. The
+// Handlers subscribed previously *must* be comparable or it will panic.
+// See here: https://golang.org/ref/spec#Comparison_operators.
 func (r *Router) Unsubscribe(rt string, h Handler) {
 	r.pushOp(func(handlers map[string][]Handler) {
 		parts := strings.Split(rt, ".")

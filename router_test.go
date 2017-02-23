@@ -11,7 +11,7 @@ type mock struct {
 	HandleStub func(Event)
 }
 
-func (m *mock) Handle(e Event) {
+func (m mock) Handle(e Event) {
 	if m.HandleStub != nil {
 		m.HandleStub(e)
 	}
@@ -67,12 +67,6 @@ func TestHandlers(t *testing.T) {
 			2,
 		},
 		{
-			"ThreeLevelsOfWildcards",
-			[]string{"*", "*.*", "*.*.*"},
-			"first.second.third",
-			3,
-		},
-		{
 			"PartialSubscribe",
 			[]string{"first"},
 			"first.second.third",
@@ -113,7 +107,7 @@ func TestHandlers(t *testing.T) {
 			wg.Add(test.expectedCalled)
 
 			var called int
-			h := &mock{
+			h := mock{
 				HandleStub: func(e Event) {
 					defer wg.Done()
 					called++
