@@ -43,18 +43,6 @@ func TestHandlers(t *testing.T) {
 			1,
 		},
 		{
-			"SecondLevelWildcardFirstEvent",
-			[]string{"*.second"},
-			"first.second",
-			1,
-		},
-		{
-			"SecondLevelWildcardSecondEvent",
-			[]string{"first.*"},
-			"first.second",
-			1,
-		},
-		{
 			"TopLevelEventTwoHandlers",
 			[]string{"event", "event"},
 			"event",
@@ -69,20 +57,14 @@ func TestHandlers(t *testing.T) {
 		{
 			"PartialSubscribe",
 			[]string{"first"},
-			"first.second.third",
+			"first.second",
 			1,
 		},
 		{
 			"PartialPublish",
-			[]string{"first.second.third"},
+			[]string{"first.second"},
 			"first",
 			0,
-		},
-		{
-			"BranchingHandlers",
-			[]string{"first", "first.*", "first.second", "first.*.third", "first.second.third"},
-			"first.second.third",
-			5,
 		},
 		{
 			"NoMatchingHandlers",
