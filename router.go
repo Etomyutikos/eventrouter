@@ -24,6 +24,7 @@ func (e Event) CurrentPart() string {
 	return e.Route[e.index]
 }
 
+// Handler defines a subscribable Handler for responding to Events.
 type Handler interface {
 	Handle(Event)
 }
