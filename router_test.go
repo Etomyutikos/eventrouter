@@ -186,12 +186,16 @@ func TestUnsubscribe(t *testing.T) {
 		t.Run(test.desc, func(t *testing.T) {
 			r := New()
 
+			var wg sync.WaitGroup
+			wg.Add(test.expectedCalled[0])
+
 			var called int
 			handlers := make(map[string][]Handler)
 
 			for i, rt := range test.subscribeRts {
 				handlers[rt] = append(handlers[rt], &mock{
 					HandleStub: func(e Event) {
+						defer wg.Done()
 						called++
 					},
 				})
@@ -200,9 +204,12 @@ func TestUnsubscribe(t *testing.T) {
 
 			r.Publish(test.publishRt, nil)
 
+			wg.Wait()
 			if called != test.expectedCalled[0] {
 				t.Fatalf("handler called incorrect times pre-unsubscribe; expected: %d, actual: %d", test.expectedCalled[0], called)
 			}
+
+			wg.Add(test.expectedCalled[1])
 
 			for i, rt := range test.unsubscribeRts {
 				var h Handler
@@ -217,6 +224,7 @@ func TestUnsubscribe(t *testing.T) {
 			called = 0
 			r.Publish(test.publishRt, nil)
 
+			wg.Wait()
 			if called != test.expectedCalled[1] {
 				t.Fatalf("handler called incorrect times post-unsubscribe; expected: %d, actual: %d", test.expectedCalled[1], called)
 			}
