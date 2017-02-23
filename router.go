@@ -28,12 +28,6 @@ type Handler interface {
 	Handle(Event)
 }
 
-type Router interface {
-	Publish(route string, payload interface{})
-	Subscribe(route string, handler Handler)
-	Unsubscribe(route string, handler Handler)
-}
-
 type router struct {
 	ops chan func(map[string][]Handler)
 }
@@ -48,7 +42,7 @@ func (r *router) loop() {
 }
 
 // New returns a configured Router.
-func New() Router {
+func New() *router {
 	r := &router{
 		ops: make(chan func(map[string][]Handler)),
 	}
@@ -56,8 +50,12 @@ func New() Router {
 	return r
 }
 
+type routeHandler struct {
+	*router
+}
+
 // Handle performs Event routing for the subscribed Handlers.
-func (r *router) Handle(e Event) {
+func (r routeHandler) Handle(e Event) {
 	r.ops <- func(handlers map[string][]Handler) {
 		if !e.next() {
 			return
@@ -80,7 +78,7 @@ func (r *router) Handle(e Event) {
 // Publish triggers any Handlers subscribed to the route to handle an Event
 // containing the provided payload.
 func (r *router) Publish(rt string, p interface{}) {
-	r.Handle(Event{
+	routeHandler{r}.Handle(Event{
 		Route:   strings.Split(rt, "."),
 		index:   -1,
 		Payload: p,
@@ -92,9 +90,9 @@ func (r *router) Subscribe(rt string, h Handler) {
 	r.ops <- func(handlers map[string][]Handler) {
 		parts := strings.Split(rt, ".")
 		if len(parts) > 1 {
-			r := New()
+			r := routeHandler{New()}
 			r.Subscribe(strings.Join(parts[1:], "."), h)
-			h = r.(*router)
+			h = r
 		}
 
 		hs, ok := handlers[parts[0]]
@@ -118,7 +116,7 @@ func (r *router) Unsubscribe(rt string, h Handler) {
 
 		if len(parts) > 1 {
 			for _, handler := range hs {
-				r, ok := handler.(Router)
+				r, ok := handler.(routeHandler)
 				if ok {
 					r.Unsubscribe(strings.Join(parts[1:], "."), h)
 					h = handler
