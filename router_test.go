@@ -192,24 +192,22 @@ func TestUnsubscribe(t *testing.T) {
 
 	for _, test := range tests {
 		t.Run(test.desc, func(t *testing.T) {
-			r := New()
-
 			var wg sync.WaitGroup
 			wg.Add(test.expectedCalled[0])
 
 			var called int
 			handlers := make(map[string][]Handler)
 
-			for i, rt := range test.subscribeRts {
+			for _, rt := range test.subscribeRts {
 				handlers[rt] = append(handlers[rt], &mock{
 					HandleStub: func(e Event) {
 						defer wg.Done()
 						called++
 					},
 				})
-				r.Subscribe(rt, handlers[rt][i])
 			}
 
+			r := New(handlers)
 			r.Publish(test.publishRt, nil)
 
 			wg.Wait()

@@ -34,12 +34,14 @@ type Handler interface {
 	Handle(Event)
 }
 
+type opFn func(map[string][]Handler)
+
 // Router manages a simple trie of Handlers that can respond to Events by
 // matching incoming routes against the routes of subscribed Handlers.
 //
 // TODO(Erik): a better doc comment, please :(
 type Router struct {
-	ops chan func(map[string][]Handler)
+	ops chan opFn
 }
 
 // see https://dave.cheney.net/2016/11/13/do-not-fear-first-class-functions for
@@ -51,13 +53,31 @@ func (r *Router) loop() {
 	}
 }
 
-// New returns a configured Router.
-func New() *Router {
-	r := &Router{
-		ops: make(chan func(map[string][]Handler)),
-	}
+func (r *Router) start() {
+	r.ops = make(chan opFn)
 	go r.loop()
-	return r
+}
+
+func (r *Router) pushOp(fn opFn) {
+	if r.ops == nil {
+		r.start()
+	}
+
+	r.ops <- fn
+}
+
+// New returns a configured Router. This function is for conveniently passing of
+// Handlers upon initialization.
+func New(ms ...map[string][]Handler) *Router {
+	var r Router
+	for _, m := range ms {
+		for rt, hs := range m {
+			for _, h := range hs {
+				r.Subscribe(rt, h)
+			}
+		}
+	}
+	return &r
 }
 
 type routeHandler struct {
@@ -66,7 +86,7 @@ type routeHandler struct {
 
 // Handle performs Event routing for the subscribed Handlers.
 func (r routeHandler) Handle(e Event) {
-	r.ops <- func(handlers map[string][]Handler) {
+	r.pushOp(func(handlers map[string][]Handler) {
 		if !e.Route.next() {
 			return
 		}
@@ -77,7 +97,7 @@ func (r routeHandler) Handle(e Event) {
 		for _, h := range hs {
 			h.Handle(e)
 		}
-	}
+	})
 }
 
 // Publish triggers any Handlers subscribed to the route to handle an Event
@@ -94,12 +114,12 @@ func (r *Router) Publish(rt string, p interface{}) {
 
 // Subscribe adds a Handler to the Router to respond to the given route.
 func (r *Router) Subscribe(rt string, h Handler) {
-	r.ops <- func(handlers map[string][]Handler) {
+	r.pushOp(func(handlers map[string][]Handler) {
 		parts := strings.Split(rt, ".")
 		if len(parts) > 1 {
-			r := routeHandler{New()}
+			var r Router
 			r.Subscribe(strings.Join(parts[1:], "."), h)
-			h = r
+			h = routeHandler{&r}
 		}
 
 		hs, ok := handlers[parts[0]]
@@ -109,12 +129,12 @@ func (r *Router) Subscribe(rt string, h Handler) {
 
 		hs = append(hs, h)
 		handlers[parts[0]] = hs
-	}
+	})
 }
 
 // Unsubscribe removes a specifc Handler from the Router for a given route.
 func (r *Router) Unsubscribe(rt string, h Handler) {
-	r.ops <- func(handlers map[string][]Handler) {
+	r.pushOp(func(handlers map[string][]Handler) {
 		parts := strings.Split(rt, ".")
 		hs, ok := handlers[parts[0]]
 		if !ok {
@@ -138,5 +158,5 @@ func (r *Router) Unsubscribe(rt string, h Handler) {
 				break
 			}
 		}
-	}
+	})
 }
