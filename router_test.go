@@ -61,6 +61,12 @@ func TestHandlers(t *testing.T) {
 			2,
 		},
 		{
+			"TopLevelEventAndWildcardTwoHandlers",
+			[]string{"event", "*"},
+			"event",
+			2,
+		},
+		{
 			"ThreeLevelsOfWildcards",
 			[]string{"*", "*.*", "*.*.*"},
 			"first.second.third",
