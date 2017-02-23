@@ -118,8 +118,10 @@ func TestHandlers(t *testing.T) {
 					defer wg.Done()
 					called++
 
+					// TODO(Erik): when these failures happen, it's almost impossible to debug
+					// the output just complains goroutine deadlock
 					expectedRt := strings.Split(test.publishRt, ".")
-					if !reflect.DeepEqual(e.Route, expectedRt) {
+					if !reflect.DeepEqual(e.Route.parts, expectedRt) {
 						t.Fatalf("incorrect route; expected: %v, actual: %v", expectedRt, e.Route)
 					}
 

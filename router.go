@@ -2,26 +2,30 @@ package eventrouter
 
 import "strings"
 
-// Event wraps a payload and route information for passing into Handlers.
-type Event struct {
-	Route   []string
-	index   int
-	Payload interface{}
+type route struct {
+	parts []string
+	index int
 }
 
-func (e *Event) next() bool {
-	e.index++
-	if e.index >= len(e.Route) {
+func (r *route) next() bool {
+	r.index++
+	if r.index >= len(r.parts) {
 		return false
 	}
 
 	return true
 }
 
-// CurrentPart returns the part of the Event's route that corresponds to
-// the depth of the current handler.
-func (e Event) CurrentPart() string {
-	return e.Route[e.index]
+// Current returns the part of the route that corresponds to the depth of the
+// current handler.
+func (r route) Current() string {
+	return r.parts[r.index]
+}
+
+// Event wraps a payload and route information for passing into Handlers.
+type Event struct {
+	Route   route
+	Payload interface{}
 }
 
 // Handler defines a subscribable Handler for responding to Events.
@@ -58,14 +62,16 @@ type routeHandler struct {
 // Handle performs Event routing for the subscribed Handlers.
 func (r routeHandler) Handle(e Event) {
 	r.ops <- func(handlers map[string][]Handler) {
-		if !e.next() {
+		if !e.Route.next() {
 			return
 		}
 
-		hs := handlers[e.CurrentPart()]
+		hs := handlers[e.Route.Current()]
 		hs = append(hs, handlers["*"]...)
 
+		looped := 0
 		for _, h := range hs {
+			looped++
 			h.Handle(e)
 		}
 	}
@@ -75,8 +81,10 @@ func (r routeHandler) Handle(e Event) {
 // containing the provided payload.
 func (r *router) Publish(rt string, p interface{}) {
 	routeHandler{r}.Handle(Event{
-		Route:   strings.Split(rt, "."),
-		index:   -1,
+		Route: route{
+			parts: strings.Split(rt, "."),
+			index: -1,
+		},
 		Payload: p,
 	})
 }
