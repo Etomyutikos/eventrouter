@@ -3,6 +3,7 @@ package eventrouter
 import (
 	"reflect"
 	"strings"
+	"sync"
 	"testing"
 )
 
@@ -102,9 +103,13 @@ func TestHandlers(t *testing.T) {
 			r := New()
 			p := "payload"
 
+			var wg sync.WaitGroup
+			wg.Add(test.expectedCalled)
+
 			var called int
 			h := &mock{
 				HandleStub: func(e Event) {
+					defer wg.Done()
 					called++
 
 					expectedRt := strings.Split(test.publishRt, ".")
@@ -124,6 +129,7 @@ func TestHandlers(t *testing.T) {
 
 			r.Publish(test.publishRt, p)
 
+			wg.Wait()
 			if called != test.expectedCalled {
 				t.Fatalf("handler called count incorrect; expected: %d, actual: %d", test.expectedCalled, called)
 			}

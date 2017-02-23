@@ -1,9 +1,6 @@
 package eventrouter
 
-import (
-	"strings"
-	"sync"
-)
+import "strings"
 
 type Event struct {
 	Route   []string
@@ -56,12 +53,7 @@ func New() Router {
 }
 
 func (r *router) Handle(e Event) {
-	var wg sync.WaitGroup
-	wg.Add(1)
-
 	r.ops <- func(handlers map[string][]Handler) {
-		defer wg.Done()
-
 		if !e.next() {
 			return
 		}
@@ -78,8 +70,6 @@ func (r *router) Handle(e Event) {
 			h.Handle(e)
 		}
 	}
-
-	wg.Wait()
 }
 
 func (r *router) Publish(rt string, p interface{}) {
