@@ -65,10 +65,6 @@ func (r routeHandler) Handle(e Event) {
 		hs := handlers[e.CurrentPart()]
 		hs = append(hs, handlers["*"]...)
 
-		if len(hs) == 0 {
-			return
-		}
-
 		for _, h := range hs {
 			h.Handle(e)
 		}
