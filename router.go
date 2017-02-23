@@ -2,12 +2,13 @@ package eventrouter
 
 import "strings"
 
-type route struct {
+// Route encapsulates an Event's route data.
+type Route struct {
 	parts []string
 	index int
 }
 
-func (r *route) next() bool {
+func (r *Route) next() bool {
 	r.index++
 	if r.index >= len(r.parts) {
 		return false
@@ -18,13 +19,13 @@ func (r *route) next() bool {
 
 // Current returns the part of the route that corresponds to the depth of the
 // current handler.
-func (r route) Current() string {
+func (r Route) Current() string {
 	return r.parts[r.index]
 }
 
 // Event wraps a payload and route information for passing into Handlers.
 type Event struct {
-	Route   route
+	Route   Route
 	Payload interface{}
 }
 
@@ -83,7 +84,7 @@ func (r routeHandler) Handle(e Event) {
 // containing the provided payload.
 func (r *Router) Publish(rt string, p interface{}) {
 	routeHandler{r}.Handle(Event{
-		Route: route{
+		Route: Route{
 			parts: strings.Split(rt, "."),
 			index: -1,
 		},
