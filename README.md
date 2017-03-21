@@ -4,4 +4,4 @@
 
 A simple event routing package. Handlers can `Subscribe` to events that will be `Publish`ed at some later date using simple prefix matching.
 
-For package documentation, see [godoc.org](http://godoc.org/gitlab.com/etomyutikos/eventrouter).
+For package documentation, see [godoc.org](https://godoc.org/gitlab.com/etomyutikos/eventrouter) or [mirror](https://godoc.org/github.com/Oneymus/eventrouter).
