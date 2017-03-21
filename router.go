@@ -1,3 +1,6 @@
+// Package eventrouter is a simple trie event routing package.
+// Handlers can Subscribe to events that will be Published at some later
+// date using simple prefix matching.
 package eventrouter
 
 import "strings"
@@ -37,9 +40,7 @@ type Handler interface {
 type opFn func(map[string][]Handler)
 
 // Router manages a simple trie of Handlers that can respond to Events by
-// matching incoming routes against the routes of subscribed Handlers.
-//
-// TODO(Erik): a better doc comment, please :(
+// prefix matching incoming routes against the routes of subscribed Handlers.
 type Router struct {
 	ops chan opFn
 }
