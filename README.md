@@ -1,4 +1,4 @@
-**NOTE**: This repo is hosted on Gitlab.com and mirrored to GitHub.com. Import statements work for either, but all examples will refer to Gitlab.com.
+**NOTE**: This repo is hosted on [gitlab.com](https://gitlab.com/etomyutikos/eventrouter) and mirrored to [github.com](https://github.com/oneymus/eventrouter). Import statements work for either, but all examples will refer to [gitlab.com](https://gitlab.com/etomyutikos/eventrouter).
 
 # eventrouter
 
